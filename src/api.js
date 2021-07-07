@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseUrl = "http://localhost:4000/api";
+const baseUrl = "https://theyardapp.com/api";
 
 //request interceptor to add the auth token header to requests
 axios.interceptors.request.use(
@@ -54,6 +54,9 @@ const api = {
   login: (body) => {
     return axios.post(`${baseUrl}/auth/login`, body);
   },
+  getToken: () => {
+    return axios.get(`${baseUrl}/auth/token`);
+  },
   refreshToken: (body) => {
     return axios.post(`${baseUrl}/auth/refresh_token`, body);
   },
@@ -63,6 +66,9 @@ const api = {
   getProtected: () => {
     return axios.get(`${baseUrl}/protected_resource`);
   },
+  getUser: () => {
+    return axios.get(`${baseUrl}/auth/user`);
+  }
 };
 
 export default api;

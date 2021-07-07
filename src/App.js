@@ -1,145 +1,64 @@
 import React, { useState, useEffect } from "react";
+import Cookies from 'js-cookie';
 import api from "./api";
+import DisplayUser from "./DisplayUser.component";
 
-const App = () => {
-  const [appState, setAppState] = useState({
+var initialState = {
     display: "hide",
-    isLoggedIn: false,
+    isAuthenticated: false,
     user: null,
     loading: false,
-  });
-  const [formState, setFormState] = useState({
-    username: "",
-    password: "",
-    display: "show",
-  });
+  }
 
-  useEffect(() => {
-    (async () => {
-      setAppState({ ...appState, loading: true });
-      let accessToken = localStorage.getItem("accessToken");
-      if (accessToken) {
-        try {
-          const res = await api.getProtected();
-          console.log(res.data);
-          setAppState({
-            ...appState,
-            display: "show",
-            isLoggedIn: true,
-            user: res.data.user,
-            loading: false,
-          });
-          setFormState({ ...formState, display: "hide" });
-        } catch (error) {
-          console.error(error);
-          alert(error.response.data.error);
-          setAppState({ ...appState, loading: false });
-        }
-      }
-    })();
-  }, []);
-
-  const handleChange = (e) => {
-    setFormState({ ...formState, [e.target.name]: e.target.value });
+const App = () => {
+  const [appState, setAppState] = useState(initialState);
+  const [refreshToken, setRefreshToken] = React.useState(Cookies.get('refreshToken'));
+  const [accessToken, setAccessToken] = React.useState(localStorage.getItem('accessToken'));
+  function handleLogin(){
+    window.open("https://theyardapp.com/api/auth/google", "_self");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  async function handleLogout(){
     try {
-      let res;
-      setAppState({ ...appState, loading: true });
-      const { username, password } = formState;
-      switch (e.target.name) {
-        case "Login":
-          res = await api.login({ username, password });
-          break;
-        case "Signup":
-          res = await api.signup({ username, password });
-          break;
+      await api.logout();
+      setAppState(initialState);
+      localStorage.removeItem('accessToken');
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      setAppState({ ...appState, loading: false });
+      alert(err.response.data.error);
+    };
+  };
+
+  React.useEffect(async ()=>{
+    if (refreshToken && !accessToken) {
+      try {
+        var res = await api.getToken();
+	if (res.data.accessToken) {
+          localStorage.setItem('accessToken', res.data.accessToken);
+	  setAppState({...appState, isAuthenticated: true});  
+	}
+      } catch (err) {
+        console.error(err)
+	alert(err.response.data.error);
       }
-      let { accessToken, refreshToken } = res.data;
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
+    };
+  },[refreshToken, accessToken]);
 
-      window.location.reload();
-    } catch (error) {
-      console.error(error);
-      setAppState({ ...appState, loading: false });
-      alert(error.response.data.error);
-    }
-  };
+  React.useEffect(() => {
+    if (accessToken && !appState.isAuthenticated) {
+      setAppState({...appState, isAuthenticated: true});
+    };
+  }, [accessToken, appState]);
 
-  const handleLogout = async () => {
-    try {
-      setAppState({ ...appState, loading: true });
-      let refreshToken = localStorage.getItem("refreshToken");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      await api.logout(refreshToken);
-      window.location.reload();
-    } catch (error) {
-      console.error(error);
-      setAppState({ ...appState, loading: false });
-      alert(error.response.data.error);
-    }
-  };
+  const mainMarkup = appState.isAuthenticated 
+		? <div>You are logged in!<DisplayUser /><button onClick={handleLogout}>logout</button></div>
+		: <button onClick={handleLogin}>Google Login</button>
 
-  return (
-    <div className="App">
-      <div className={`${formState.display} form-container`}>
-        <legend className="caption">Login/Signup form:</legend>
-        <form className="login-form">
-          <label className="form-label">Username :</label>
-          <input
-            type="text"
-            name="username"
-            value={formState.username}
-            onChange={(e) => handleChange(e)}
-            placeholder="Enter your user name"
-            className="form-field"
-            autoComplete="off"
-          />
-          <br />
-          <br />
-          <label className="form-label">Password :</label>
-          <input
-            type="password"
-            name="password"
-            value={formState.password}
-            onChange={(e) => handleChange(e)}
-            placeholder="Enter your password"
-            className="form-field"
-            autoComplete="off"
-          />
-          <br />
-          <br />
-          <button
-            type="submit"
-            className="form-btn"
-            name="Login"
-            onClick={(e) => handleSubmit(e)}
-          >
-            Log In
-          </button>
-          <button
-            type="submit"
-            className="form-btn"
-            name="Signup"
-            onClick={(e) => handleSubmit(e)}
-          >
-            Sign Up
-          </button>
-        </form>
-      </div>
-      {!appState.loading && (
-        <div className={`${appState.display} user-info`}>
-          <p>Logged in user:</p>
-          <h4>{appState.isLoggedIn && appState.user.username}</h4>
-          <button onClick={handleLogout}>Log Out</button>
-        </div>
-      )}
-    </div>
-  );
+
+
+  return mainMarkup;
 };
 
 export default App;
