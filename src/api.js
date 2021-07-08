@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from 'js-cookie';
 
 const baseUrl = "https://theyardapp.com/api";
 
@@ -23,16 +24,16 @@ axios.interceptors.response.use(
   },
   function (error) {
     const originalRequest = error.config;
-    let refreshToken = localStorage.getItem("refreshToken");
-
+    let refreshToken = Cookies.get('refreshToken');
     if (
       refreshToken &&
       error.response.status === 401 &&
       !originalRequest._retry
     ) {
+      console.log('here');
       originalRequest._retry = true;
       return axios
-        .post(`${baseUrl}/auth/refresh_token`, { refreshToken: refreshToken })
+        .get(`${baseUrl}/auth/token`)
         .then((res) => {
           if (res.status === 200) {
             localStorage.setItem("accessToken", res.data.accessToken);

@@ -43,6 +43,10 @@ const App = () => {
         console.error(err)
 	alert(err.response.data.error);
       }
+    } else if (!refreshToken && accessToken) {
+      localStorage.removeItem('accessToken');
+      setAppState(initialState);
+      window.location.reload();
     };
   },[refreshToken, accessToken]);
 
