@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from 'js-cookie';
 
-const baseUrl = "https://theyardapp.com/api";
+const baseUrl = "https://aa-solutions.tech/api";
 
 //request interceptor to add the auth token header to requests
 axios.interceptors.request.use(
@@ -25,6 +25,9 @@ axios.interceptors.response.use(
   function (error) {
     const originalRequest = error.config;
     let refreshToken = Cookies.get('refreshToken');
+    if (error.response.status === 404){
+      return error
+    };
     if (
       refreshToken &&
       error.response.status === 401 &&

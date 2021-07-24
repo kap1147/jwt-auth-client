@@ -2,6 +2,14 @@ import React, { useState, useEffect } from "react";
 import Cookies from 'js-cookie';
 import api from "./api";
 import DisplayUser from "./DisplayUser.component";
+import { Route, Switch } from "react-router-dom";
+// Pages
+import HomePage from './components/pages/HomePage.component';
+import SigninPage from './components/pages/SigninPage.component';
+import SignupPage from './components/pages/SignupPage.component';
+import SignoutPage from './components/pages/SignoutPage.component';
+
+import AuthRoute from './components/HOCs/AuthRoute.component';
 
 var initialState = {
     display: "hide",
@@ -15,7 +23,7 @@ const App = () => {
   const [refreshToken, setRefreshToken] = React.useState(Cookies.get('refreshToken'));
   const [accessToken, setAccessToken] = React.useState(localStorage.getItem('accessToken'));
   function handleLogin(){
-    window.open("https://theyardapp.com/api/auth/google", "_self");
+    window.open("https://aa-solutions.tech/api/auth/google", "_self");
   };
 
   async function handleLogout(){
@@ -62,7 +70,15 @@ const App = () => {
 
 
 
-  return mainMarkup;
+  return (
+      <Switch>
+        {/* Client app routes */}
+        <Route exact path="/" component={HomePage} />
+	<Route exact path="/signin" component={SigninPage} />
+	<Route exact path="/signup" component={SignupPage} />
+        <AuthRoute exact path="/signout" component={SignoutPage} isAuthenticated={appState.isAuthenticated} />
+      </Switch>
+  );
 };
 
 export default App;
