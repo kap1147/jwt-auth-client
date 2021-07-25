@@ -83,6 +83,7 @@ let initialErrors = {
 export default function SigninPage() {
   const classes = useStyles();
   const [errors, setErrors] = useState(initialValues);
+  const [serverErrors, setServerErrors] = useState(initialErrors);
   const [values, setValues] = useState(initialErrors);
   const [isDisabled, setIsDisabled] = useState(true);
   let history = useHistory();
@@ -90,6 +91,12 @@ export default function SigninPage() {
   const getErrors = useCallback(() => {
     return errors;
   }, [errors]);
+
+  const serverHasErrors = useCallback(() => {
+    if (serverErrors.email.length !== 0 || serverErrors.password.length !== 0) {
+      
+    };
+  },[serverErrors]);
 
   const formIsValid = useCallback(() => {
     if (errors.email.length === 0 && errors.password.length === 0) return true;
@@ -113,7 +120,7 @@ export default function SigninPage() {
   // clean input
   function handleChange(e) {
     setValues({...values, [e.target.id]: e.target.value });
-    let staticErrors = getErrors()[e.target.id];
+    let staticErrors = [];
     let newErrors = [];
     if (e.target.value.length === 0) {
       newErrors.push({ id: 0, msg: `${e.target.id} can not be blank!` });
@@ -124,16 +131,24 @@ export default function SigninPage() {
       if (staticErrors.length !== 0)
         staticErrors = staticErrors.filter((err) => err.id !== 0);
     }
+    // v
+    if (e.target.id === "email" && e.target.value.length !== 0 && serverErrors.email.length !== 0) {
+      serverErrors.email.forEach(err => {
+        if (err.id === 2 && err.email === e.target.value) { 
+            newErrors.push(err)
+        };
+      })
+    } 
+    // validate email is correct syntax
     if (e.target.id === "email" && e.target.value.length !== 0) {
       let re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
       if (!re.exec(values.email)) {
-    
         newErrors.push({ id: 1, msg: "Email is invalid!" });
       } 
       if (staticErrors.length !== 0)
         staticErrors = staticErrors.filter((err) => err.id !== 1);
     }
-    setErrors({...errors, [e.target.id]: [...staticErrors, ...newErrors]})
+    setErrors({...errors, [e.target.id]: newErrors})
   }
 
   async function handleClick(event) {
@@ -141,10 +156,15 @@ export default function SigninPage() {
     if (formIsValid() && !formIsBlank()) {
       let res = await api.login(values);
       if (res.status === 200) {
-        console.log(res.data)
+        console.log('success: ', res.data)
       } else {
-        console.log('response: ', res);
-      };
+        let data = res.response.data;
+        console.log('error response: ', data);
+        if (data) {
+	  setServerErrors({...serverErrors, [data.type]: [data.payload]})
+          setErrors({...errors, [data.type]: [data.payload]});
+        };
+      }
     } else {
       console.log("data is dirty (<");
     }
@@ -177,15 +197,17 @@ export default function SigninPage() {
             <Typography align="center" variant="h5" color="primary">
               Or
             </Typography>
+	    <form>
             <TextField
-              error={errors.email.length !== 0 ? true : false}
+              autoComplete="off"
+              error={(errors.email.length !== 0) ? true : false}
               id="email"
               value={values.email}
               onChange={handleChange}
               label="Email"
               className={classes.textField}
               helperText={
-                errors.email.length !== 0
+                (errors.email.length !== 0)
                   ? errors.email.map((err) => err.msg)
                   : "We'll never share your email."
               }
@@ -197,15 +219,15 @@ export default function SigninPage() {
               <Link className={classes.link}>Forgot password</Link>
             </Typography>
             <TextField
-              error={errors.password.length !== 0 ? true : false}
+              error={(errors.password.length !== 0 || serverErrors.password.length !== 0) ? true : false}
               id="password"
               label="Password"
               className={classes.textField}
               value={values.password}
               onChange={handleChange}
               helperText={
-                errors.password.length !== 0
-                  ? errors.password.map((err) => err.msg)
+                (errors.password.length !== 0)
+                  ? [errors.password].map((err) => err.msg)
                   : null
               }
               margin="normal"
@@ -224,6 +246,7 @@ export default function SigninPage() {
             >
               Sign in
             </Button>
+	  </form>
             <Typography
               className={classes.register}
               variant="body2"
